@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mes listes Anime-sama</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{
+      --accent:#4CAF50;
+      --accent-hover:#45a049;
+      --danger:#e53935;
+      --danger-hover:#c62828;
+      --card:#fafafa;
+      --shadow:0 4px 12px rgba(0,0,0,0.1);
+      --search-radius:18px;
+      --search-height:38px;
+      --modal-max-width:720px;
+    }
+
+    body { font-family: "Segoe UI", system-ui, -apple-system, sans-serif; background:#f4f6f9; margin:0; padding:20px; }
+    h1 { text-align:center; color:#333; margin:0 0 14px; }
+
+    .toolbar {
+      display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin:10px auto 18px;
+      position:relative;
+      max-width:900px;
+      width:100%;
+    }
+    .toolbar input[type="text"]{
+      flex:1 1 600px;
+      max-width:800px;
+      min-width:180px;
+      width:100%;
+      padding:7px 14px;
+      border:1px solid #ccc;
+      border-radius:var(--search-radius);
+      font-size:15px; height:var(--search-height); box-sizing:border-box;
+      transition:.2s;
+      background:white;
+      box-shadow:0 2px 8px rgba(0,0,0,0.05);
+      margin:0;
+      outline:none;
+      overflow-x:auto;
+    }
+    .toolbar input[type="text"]:focus { border-color:var(--accent); outline:none; }
+
+    .search-dropdown {
+      position:absolute; left:0; right:0; top:calc(100% + 2px);
+      z-index:100;
+      background:white;
+      border-radius:14px;
+      box-shadow:0 2px 8px rgba(0,0,0,0.15);
+      border:1px solid #e0e0e0;
+      max-height:220px;
+      overflow-y:auto;
+      margin-top:2px;
+    }
+    .search-suggestion {
+      display:flex; align-items:center; gap:14px;
+      cursor:pointer;
+      padding:10px 16px;
+      transition:.15s;
+    }
+    .search-suggestion:hover, .search-suggestion-active { background:var(--accent); color:white;}
+    .search-suggestion-img {
+      width:40px; height:54px; object-fit:cover; border-radius:7px; flex-shrink:0;
+      background:#efefef;
+    }
+    .search-suggestion-title {
+      font-size:16px; font-weight:600; color:#222; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1;
+    }
+    .search-noresult {
+      padding:14px; text-align:center; color:#e53935; font-size:15px;
+      background:#fff5f5; border-radius:14px;
+    }
+
+    .filters { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+    input, button, select, textarea { padding:10px; border:1px solid #ccc; border-radius:10px; font-size:14px; }
+    button { background:var(--accent); color:white; border:none; cursor:pointer; transition:.2s; }
+    button:hover { background:var(--accent-hover); }
+
+    .lists-container { display:flex; flex-wrap:wrap; gap:20px; justify-content:center; }
+
+    .list-panel { background:white; border-radius:16px; padding:14px; box-shadow:var(--shadow); flex:1 1 340px; max-width:720px; position:relative; }
+    .list-title { font-size:18px; font-weight:700; text-align:center; margin-bottom:10px; }
+    .list-actions { display:flex; gap:10px; justify-content:center; margin-bottom:10px; }
+    .delete-list {
+      position:absolute; top:8px; right:8px;
+      background:var(--danger); color:#fff;
+      border:none; border-radius:50%; width:22px; height:22px; font-size:14px; cursor:pointer;
+      display:flex; align-items:center; justify-content:center; box-shadow:0 2px 5px rgba(0,0,0,0.2);
+    }
+    .delete-list:hover{ background:var(--danger-hover); }
+
+    .add-form{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin:10px 0 0; }
+    .add-form input[type="url"]{ min-width:260px; flex:1; }
+
+    .card {
+      display:flex; gap:14px; align-items:center;
+      background:var(--card); border-radius:12px; box-shadow:0 2px 6px rgba(0,0,0,0.08);
+      padding:10px; margin-top:10px; position:relative;
+      word-break:break-word;
+      overflow-wrap:break-word;
+      max-width:100%;
+    }
+    .card img { width:120px; height:160px; object-fit:cover; border-radius:10px; flex-shrink:0; background:#efefef;}
+    .card-content{ flex:1; min-width:0; display:flex; flex-direction:column; gap:6px; max-width:calc(100% - 134px);}
+    .card-title { font-size:16px; font-weight:700; color:#222; line-height:1.25; word-break:break-word;}
+    .card a { color:#2196F3; font-weight:600; text-decoration:none; }
+    .card a:hover { text-decoration:underline; }
+
+    .tags { display:flex; flex-wrap:wrap; gap:6px; }
+    .tag { background:#eee; padding:4px 8px; border-radius:999px; font-size:12px; word-break:break-word;}
+
+    .delete-icon {
+      position:absolute; top:8px; right:8px;
+      background:var(--danger); color:white; border:none; border-radius:50%;
+      width:22px; height:22px; font-size:14px; cursor:pointer;
+      display:flex; align-items:center; justify-content:center;
+      box-shadow:0 2px 5px rgba(0,0,0,0.2);
+    }
+    .delete-icon:hover{ background:var(--danger-hover); }
+    .options-btn{
+      position:absolute; top:8px; left:8px;
+      background:#ff9800; color:#fff; border:none; border-radius:50%; width:24px; height:24px;
+      font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+      box-shadow:0 2px 5px rgba(0,0,0,0.2);
+    }
+    .options-btn:hover{ background:#e68900; }
+
+    .checkline {
+      display:flex; align-items:center; gap:8px; font-size:14px;
+      background:#f7f7f7; border-radius:8px; padding:6px 10px; margin:3px 0;
+      border:1px solid #e1e1e1;
+    }
+    .checkline input[type="checkbox"] {
+      accent-color: var(--accent);
+      width: 19px; height: 19px;
+      border-radius:6px;
+      margin-right:4px;
+      border:1px solid #ccc;
+      cursor:pointer;
+      transition:.2s;
+    }
+    .checkline span {
+      font-size:14px; font-weight:500; color:#333;
+      word-break:break-word;
+    }
+
+    .comment {
+      font-size:14px; color:#444; background:#fff;
+      border-radius:8px; padding:8px; border:1px solid #eee;
+      word-break:break-word;
+      white-space:pre-wrap;
+      overflow-wrap:break-word;
+      max-width:100%;
+    }
+
+    .settings-btn {
+      position:fixed; bottom:20px; right:20px;
+      background:var(--accent); color:white; border:none; border-radius:50%;
+      width:55px; height:55px; font-size:22px; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.25);
+      display:flex; align-items:center; justify-content:center;
+    }
+    .settings-btn:hover{ background:var(--accent-hover); }
+
+    .modal {
+      display:none; position:fixed; z-index:1000; inset:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;
+    }
+    .modal-content {
+      background:white; padding:18px; border-radius:12px; width:96%; max-width:var(--modal-max-width); box-shadow:0 6px 18px rgba(0,0,0,0.3);
+      animation:fadeIn .2s ease-out;
+      max-height:90vh; overflow:auto;
+      word-break:break-word;
+    }
+    @keyframes fadeIn{ from{ opacity:0; transform:translateY(12px);} to{opacity:1; transform:translateY(0);} }
+    .modal-actions{ display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; margin-top:12px; }
+    .cancel-btn{ background:var(--danger); }
+    .cancel-btn:hover{ background:var(--danger-hover); }
+
+    .btn-row{ display:flex; gap:10px; justify-content:center; align-items:center; flex-wrap:wrap; }
+    .file-hidden{ display:none; }
+    .btn-like { display:inline-flex; align-items:center; gap:8px; background:var(--accent); color:#fff; padding:10px 12px; border-radius:10px; cursor:pointer; }
+    .btn-like:hover{ background:var(--accent-hover); }
+
+    .opt-grid{ display:grid; grid-template-columns:1fr; gap:12px; }
+    .opt-section{ background:#f8f8fb; border:1px solid #eee; border-radius:10px; padding:12px; }
+    .opt-section h4{ margin:0 0 8px; font-size:14px; }
+    .tags-list{ display:flex; flex-wrap:wrap; gap:8px; }
+    .tag-pill{
+      display:inline-flex; align-items:center; justify-content:center; gap:6px; background:#eee; padding:5px 8px; border-radius:999px; font-size:12px; min-width:0;
+    }
+    .tag-pill button{
+      background:var(--danger); color:#fff;
+      border:none; border-radius:50%; width:18px; height:18px; font-size:12px; cursor:pointer;
+      display:flex; align-items:center; justify-content:center;
+      padding:0;
+      margin:0 0 0 2px;
+    }
+    .tag-pill button:hover{ background:var(--danger-hover); }
+    .add-tag-row{ display:flex; gap:8px; flex-wrap:wrap; }
+    .color-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .color-preview{ width:28px; height:28px; border-radius:6px; border:1px solid #ddd; }
+    .apply-row{ display:flex; gap:8px; flex-wrap:wrap; }
+    .check-row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    textarea{ width:100%; min-height:70px; resize:vertical; word-break:break-word; }
+
+    /* Popup carte agrandie */
+    .big-card-modal .modal-content {
+      max-width:540px !important;
+      padding:26px !important;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+    }
+    .big-card {
+      width:100%; max-width:420px; background:var(--card); border-radius:20px; box-shadow:var(--shadow);
+      display:flex; flex-direction:column; align-items:center; gap:16px; padding:16px 14px;
+      word-break:break-word;
+    }
+    .big-card-img {
+      width:180px; height:240px; object-fit:cover; border-radius:14px; background:#efefef;
+      margin-bottom:6px;
+    }
+    .big-card-title {
+      font-size:21px; font-weight:800; color:#222; text-align:center; word-break:break-word;
+    }
+    .big-card-tags { display:flex; flex-wrap:wrap; gap:7px; justify-content:center; }
+    .big-card-tag { background:#eee; padding:5px 12px; border-radius:999px; font-size:13px; }
+    .big-card-link { color:#2196F3; font-weight:600; text-decoration:none; font-size:15px; }
+    .big-card-link:hover { text-decoration:underline;}
+    .big-card-checkline { margin-top:10px; }
+    .big-card-comment {
+      font-size:15px; background:#fff; color:#444; border-radius:10px; padding:10px; border:1px solid #eee; margin-top:8px;
+      word-break:break-word; white-space:pre-wrap; max-width:100%;
+    }
+    .big-card-close-btn{
+      margin-top:19px; background:var(--danger); color:white; border:none; border-radius:9px; padding:10px 19px; font-size:16px; cursor:pointer;
+      font-weight:600;
+    }
+    .big-card-close-btn:hover{ background:var(--danger-hover); }
+
+    /* Responsive */
+    @media (max-width: 700px) {
+      .toolbar { flex-direction:column; max-width:100%; }
+      .toolbar input[type="text"] { max-width:100vw; width:100vw; min-width:0; font-size:16px;}
+      .list-panel { max-width:98vw;}
+      .modal-content, .big-card-modal .modal-content { max-width:99vw !important;}
+      .big-card { max-width:95vw;}
+    }
+    @media (max-width: 420px) {
+      .toolbar input[type="text"] { padding:9px 8px; font-size:15px;}
+      .card img { width:80px; height:110px;}
+      .big-card-img { width:120px; height:160px;}
+      .big-card-title { font-size:17px;}
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
+</head>
+<body>
+  <h1>🌸 Mes animes Anime-sama 🌸</h1>
+
+  <!-- Barre d’outils : recherche + création liste -->
+  <div class="toolbar" style="position:relative;">
+    <div style="position:relative; width:100%; max-width:800px;">
+      <input type="text" id="searchInput" placeholder="Rechercher un titre ou un tag (tolérance aux fautes)…" autocomplete="off" />
+      <div id="searchDropdown"></div>
+    </div>
+    <div class="filters">
+      <input type="text" id="newListName" placeholder="Nouvelle liste" />
+      <button id="createListBtn">Créer liste</button>
+    </div>
+  </div>
+
+  <!-- Toutes les listes -->
+  <div class="lists-container" id="listsContainer"></div>
+
+  <!-- ⚙️ Bouton paramètres globaux -->
+  <button class="settings-btn" id="settingsBtn" title="Paramètres">⚙️</button>
+
+  <!-- 🎛️ Popup paramètres -->
+  <div class="modal" id="settingsModal">
+    <div class="modal-content">
+      <h2 style="margin:0 0 12px;">Paramètres</h2>
+      <div class="btn-row">
+        <button id="exportBtn" class="btn-like">📤 Exporter JSON</button>
+        <label for="importFile" class="btn-like">📥 Importer JSON</label>
+        <input type="file" id="importFile" class="file-hidden" accept=".json,application/json" />
+      </div>
+      <div class="modal-actions">
+        <button class="cancel-btn" id="closeModal">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ❌ Popup confirmation suppression (anime/liste) -->
+  <div class="modal" id="deleteModal">
+    <div class="modal-content">
+      <h3 id="deleteMessage" style="margin:0 0 10px;">Voulez-vous vraiment supprimer ?</h3>
+      <div class="modal-actions">
+        <button class="cancel-btn" id="cancelDelete">Annuler</button>
+        <button class="confirm-btn" id="confirmDelete">Supprimer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⚙️ Popup options de carte (tags + couleurs + checkbox + commentaire) -->
+  <div class="modal" id="optionsModal">
+    <div class="modal-content">
+      <h3 id="optTitle" style="margin:0 0 10px;">Options</h3>
+      <div class="opt-grid">
+
+        <!-- Tags -->
+        <div class="opt-section">
+          <h4>Tags</h4>
+          <div id="tagsList" class="tags-list"></div>
+          <div class="add-tag-row">
+            <input type="text" id="newTagInput" placeholder="Nouveau tag…" />
+            <button id="addTagBtn">Ajouter</button>
+          </div>
+        </div>
+
+        <!-- Couleurs -->
+        <div class="opt-section">
+          <h4>Couleur</h4>
+          <div class="color-row">
+            <input type="color" id="colorPicker" value="#ffcc00" />
+            <div id="colorPreview" class="color-preview" title="Aperçu"></div>
+          </div>
+          <div class="apply-row">
+            <label><input type="radio" name="applyMode" value="border" checked /> Contour</label>
+            <label><input type="radio" name="applyMode" value="background" /> Carte entière</label>
+            <button id="applyColorBtn">Appliquer</button>
+            <button id="resetColorBtn" type="button">Réinitialiser</button>
+          </div>
+        </div>
+
+        <!-- Case à cocher -->
+        <div class="opt-section">
+          <h4>Case à cocher (optionnelle)</h4>
+          <div class="check-row">
+            <label style="display:flex;align-items:center;gap:7px;">
+              <input type="checkbox" id="checkboxEnabled" />
+              Afficher sur la carte
+            </label>
+            <input type="text" id="checkboxLabel" placeholder="Légende (ex : Déjà vu)" />
+          </div>
+        </div>
+
+        <!-- Commentaire -->
+        <div class="opt-section">
+          <h4>Commentaire</h4>
+          <textarea id="commentInput" placeholder="Ajouter un commentaire…"></textarea>
+        </div>
+
+      </div>
+      <div class="modal-actions">
+        <button class="cancel-btn" id="closeOptions">Fermer</button>
+        <button class="confirm-btn" id="saveOptions">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Popup carte agrandie -->
+  <div class="modal big-card-modal" id="bigCardModal">
+    <div class="modal-content" id="bigCardContent"></div>
+  </div>
+
+  <script>
+    /* ===================== Données & Helpers ===================== */
+    let lists = JSON.parse(localStorage.getItem('animeLists')) || {};
+    let deleteTarget = null;
+    let optionTarget = null;
+    let searchQuery = "";
+    let searchSuggestions = [];
+    let activeSuggestionIndex = -1;
+
+    function saveLists(){ localStorage.setItem('animeLists', JSON.stringify(lists)); }
+
+    function slugFromUrl(url){
+      const parts = url.split("/");
+      const i = parts.indexOf("catalogue");
+      if(i === -1) return null;
+      const rest = parts.slice(i+1).filter(Boolean);
+      if(rest.length === 0) return null;
+      return rest[0];
+    }
+
+    function slugToName(slug){
+      return slug.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+    }
+
+    function ensureAnimeDefaults(anime){
+      if(anime.borderColor === undefined) anime.borderColor = "#999";
+      if(anime.bgColor === undefined) anime.bgColor = null;
+      if(!Array.isArray(anime.tags)) anime.tags = [];
+      if(!anime.checkbox) anime.checkbox = { enabled:false, label:"", checked:false };
+      if(anime.comment === undefined) anime.comment = "";
+      return anime;
+    }
+
+    function renderLists(){
+      const container = document.getElementById("listsContainer");
+      container.innerHTML = "";
+
+      const keys = Object.keys(lists);
+      if(keys.length === 0) return;
+
+      let fuse = null;
+      if(searchQuery.trim()){
+        const all = [];
+        keys.forEach(listName=>{
+          lists[listName].forEach((a,idx)=>{
+            all.push({
+              listName, index:idx,
+              name:a.name,
+              tags:(a.tags||[]).join(" ")
+            });
+          });
+        });
+        fuse = new Fuse(all, {
+          includeScore:true,
+          threshold:0.38,
+          keys:["name","tags"]
+        });
+      }
+
+      keys.forEach(listName=>{
+        let matchSet = null;
+        if(fuse){
+          matchSet = new Set(
+            fuse.search(searchQuery).filter(r => r.item.listName === listName).map(r => r.item.index)
+          );
+        }
+
+        const panel = document.createElement("div");
+        panel.className = "list-panel";
+
+        const delBtn = document.createElement("button");
+        delBtn.className = "delete-list";
+        delBtn.textContent = "✖";
+        delBtn.title = "Supprimer la liste";
+        delBtn.addEventListener("click", () => {
+          deleteTarget = { type:"list", listName };
+          document.getElementById("deleteMessage").textContent =
+            `Voulez-vous vraiment supprimer la liste « ${listName} » ?`;
+          document.getElementById("deleteModal").style.display = "flex";
+        });
+        panel.appendChild(delBtn);
+
+        const title = document.createElement("div");
+        title.className = "list-title";
+        title.textContent = listName;
+        panel.appendChild(title);
+
+        const actions = document.createElement("div");
+        actions.className = "list-actions";
+        actions.innerHTML = `
+          <form class="add-form">
+            <input type="url" placeholder="URL Anime-sama (ex: https://anime-sama.fr/catalogue/...)" required />
+            <button type="submit">Ajouter</button>
+          </form>`;
+        const addForm = actions.querySelector("form");
+        addForm.addEventListener("submit", (e)=>{
+          e.preventDefault();
+          const url = addForm.querySelector('input[type="url"]').value.trim();
+          const slug = slugFromUrl(url);
+          if(!slug){ alert("URL invalide : impossible de trouver /catalogue/…"); return; }
+          const name = slugToName(slug);
+          const img = `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${slug}.jpg`;
+          const anime = ensureAnimeDefaults({ name, url, img, tags:[] });
+          lists[listName].push(anime);
+          saveLists();
+          renderLists();
+          addForm.reset();
+        });
+        panel.appendChild(actions);
+
+        const listArr = lists[listName];
+        let anyShown = false;
+
+        listArr.forEach((raw, index)=>{
+          const anime = ensureAnimeDefaults(raw);
+
+          if(matchSet && !matchSet.has(index)) return;
+
+          anyShown = true;
+
+          const card = document.createElement("div");
+          card.className = "card";
+          card.style.border = `2px solid ${anime.borderColor || "#999"}`;
+          if(anime.bgColor) card.style.background = anime.bgColor;
+
+          const content = document.createElement("div");
+          content.className = "card-content";
+          content.innerHTML = `
+            <div class="card-title">${anime.name}</div>
+            <div class="tags">${(anime.tags||[]).map(t=>`<span class="tag">${t}</span>`).join("")}</div>
+            <a href="${anime.url}" target="_blank" rel="noopener">Voir sur Anime-sama</a>
+          `;
+
+          if(anime.checkbox && anime.checkbox.enabled){
+            const check = document.createElement("label");
+            check.className = "checkline";
+            const input = document.createElement("input");
+            input.type = "checkbox";
+            input.checked = !!anime.checkbox.checked;
+            input.addEventListener("change", ()=>{
+              anime.checkbox.checked = input.checked;
+              saveLists();
+            });
+            const span = document.createElement("span");
+            span.textContent = anime.checkbox.label || "";
+            check.appendChild(input); check.appendChild(span);
+            content.appendChild(check);
+          }
+
+          if(anime.comment && anime.comment.trim()){
+            const c = document.createElement("div");
+            c.className = "comment";
+            c.textContent = anime.comment.trim();
+            content.appendChild(c);
+          }
+
+          const img = document.createElement("img");
+          img.src = anime.img;
+          img.alt = anime.name;
+          img.onerror = function(){ this.src='https://via.placeholder.com/120x160?text=Image+Non+Trouvee'; };
+
+          const del = document.createElement("button");
+          del.className = "delete-icon";
+          del.textContent = "✖";
+          del.title = "Supprimer cet anime";
+          del.addEventListener("click", ()=>{
+            deleteTarget = { type:"anime", listName, index };
+            document.getElementById("deleteMessage").textContent =
+              `Voulez-vous vraiment supprimer « ${anime.name} » ?`;
+            document.getElementById("deleteModal").style.display = "flex";
+          });
+
+          const opt = document.createElement("button");
+          opt.className = "options-btn";
+          opt.textContent = "⚙";
+          opt.title = "Options (tags, couleur, case, commentaire)";
+          opt.addEventListener("click", ()=>{
+            optionTarget = { listName, index };
+            openOptionsFor(anime);
+          });
+
+          card.appendChild(del);
+          card.appendChild(opt);
+          card.appendChild(img);
+          card.appendChild(content);
+          panel.appendChild(card);
+        });
+
+        if(!fuse || anyShown){
+          container.appendChild(panel);
+        }
+      });
+    }
+
+    /* ===================== Recherche + Suggestions ===================== */
+    const searchInput = document.getElementById("searchInput");
+    const searchDropdown = document.getElementById("searchDropdown");
+
+    searchInput.addEventListener("input", (e)=>{
+      searchQuery = e.target.value || "";
+      renderLists();
+      renderSearchSuggestions();
+    });
+
+    searchInput.addEventListener("focus", ()=>{
+      renderSearchSuggestions();
+    });
+
+    searchInput.addEventListener("blur", ()=>{
+      setTimeout(()=>{ searchDropdown.innerHTML = ""; }, 180);
+      activeSuggestionIndex = -1;
+    });
+
+    searchInput.addEventListener("keydown", (e)=>{
+      if(!searchSuggestions || searchSuggestions.length === 0) return;
+      if(e.key === "ArrowDown") {
+        activeSuggestionIndex = Math.min(activeSuggestionIndex+1, searchSuggestions.length-1);
+        updateDropdownHighlight();
+        e.preventDefault();
+      } else if(e.key === "ArrowUp") {
+        activeSuggestionIndex = Math.max(activeSuggestionIndex-1, 0);
+        updateDropdownHighlight();
+        e.preventDefault();
+      } else if(e.key === "Enter") {
+        if(activeSuggestionIndex >= 0 && searchSuggestions[activeSuggestionIndex]) {
+          openBigCardPopup(searchSuggestions[activeSuggestionIndex]);
+          searchDropdown.innerHTML = "";
+          searchInput.blur();
+          e.preventDefault();
+        }
+      }
+    });
+
+    function renderSearchSuggestions(){
+      const val = searchInput.value.trim();
+      if(!val) { searchDropdown.innerHTML = ""; searchSuggestions=[]; return; }
+      const all = [];
+      Object.keys(lists).forEach(listName=>{
+        lists[listName].forEach((a,idx)=>{
+          all.push({
+            listName, index:idx,
+            name:a.name,
+            img:a.img,
+            tags:(a.tags||[]).join(" "),
+            url:a.url,
+            anime:a
+          });
+        });
+      });
+      const fuse = new Fuse(all, {
+        includeScore:true,
+        threshold:0.38,
+        keys:["name","tags"]
+      });
+      const rawResults = fuse.search(val);
+      searchSuggestions = rawResults.map(r=>r.item);
+
+      let html = '';
+      if(searchSuggestions.length > 0){
+        html += `<div class="search-dropdown">`;
+        searchSuggestions.forEach((sugg, idx)=>{
+          html += `
+            <div class="search-suggestion${idx===activeSuggestionIndex?' search-suggestion-active':''}" data-idx="${idx}">
+              <img class="search-suggestion-img" src="${sugg.img}" alt="${sugg.name}" onerror="this.src='https://via.placeholder.com/40x54?text=Image+Non+Trouvee'" />
+              <span class="search-suggestion-title">${sugg.name}</span>
+            </div>
+          `;
+        });
+        html += `</div>`;
+      }else{
+        html = `<div class="search-dropdown"><div class="search-noresult">🔍 Recherche introuvable</div></div>`;
+      }
+      searchDropdown.innerHTML = html;
+
+      Array.from(searchDropdown.querySelectorAll('.search-suggestion')).forEach(el=>{
+        el.onclick = function(){
+          const idx = Number(el.getAttribute('data-idx'));
+          if(searchSuggestions[idx]) openBigCardPopup(searchSuggestions[idx]);
+          searchDropdown.innerHTML = "";
+          searchInput.blur();
+        }
+      });
+      activeSuggestionIndex = -1;
+    }
+
+    function updateDropdownHighlight(){
+      Array.from(searchDropdown.querySelectorAll('.search-suggestion')).forEach((el, idx)=>{
+        el.classList.toggle('search-suggestion-active', idx === activeSuggestionIndex);
+      });
+    }
+
+    /* ===================== Popup Big Card ===================== */
+    const bigCardModal = document.getElementById("bigCardModal");
+    const bigCardContent = document.getElementById("bigCardContent");
+
+    function openBigCardPopup(suggestion){
+      const anime = ensureAnimeDefaults(suggestion.anime);
+      let tags = '';
+      if(anime.tags && anime.tags.length){
+        tags = `<div class="big-card-tags">${anime.tags.map(tag=>`<span class="big-card-tag">${tag}</span>`).join("")}</div>`;
+      }
+      let check = '';
+      if(anime.checkbox && anime.checkbox.enabled){
+        check = `
+          <label class="checkline big-card-checkline">
+            <input type="checkbox" ${anime.checkbox.checked?"checked":""} disabled />
+            <span>${anime.checkbox.label || ""}</span>
+          </label>
+        `;
+      }
+      let comment = '';
+      if(anime.comment && anime.comment.trim()){
+        comment = `<div class="big-card-comment">${anime.comment.trim()}</div>`;
+      }
+      bigCardContent.innerHTML = `
+        <div class="big-card">
+          <img class="big-card-img" src="${anime.img}" alt="${anime.name}" onerror="this.src='https://via.placeholder.com/180x240?text=Image+Non+Trouvee'" />
+          <div class="big-card-title">${anime.name}</div>
+          ${tags}
+          <a class="big-card-link" href="${anime.url}" target="_blank" rel="noopener">Voir sur Anime-sama</a>
+          ${check}
+          ${comment}
+          <button class="big-card-close-btn" id="closeBigCard">Fermer</button>
+        </div>
+      `;
+      bigCardModal.style.display = "flex";
+      document.getElementById("closeBigCard").onclick = ()=>{ bigCardModal.style.display = "none"; };
+      bigCardModal.onclick = e=>{ if(e.target === bigCardModal) bigCardModal.style.display = "none"; };
+    }
+
+    /* ===================== Création / Suppression de liste ===================== */
+    document.getElementById("createListBtn").addEventListener("click", ()=>{
+      const name = document.getElementById("newListName").value.trim();
+      if(!name) return;
+      if(!lists[name]) lists[name] = [];
+      saveLists();
+      document.getElementById("newListName").value = "";
+      renderLists();
+    });
+
+    /* ===================== Export / Import ===================== */
+    document.getElementById("exportBtn").addEventListener("click", ()=>{
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(lists, null, 2));
+      const a = document.createElement("a");
+      a.href = dataStr;
+      a.download = "animeLists.json";
+      a.click();
+    });
+
+    document.getElementById("importFile").addEventListener("change", (e)=>{
+      const file = e.target.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        try{
+          const imported = JSON.parse(ev.target.result);
+          lists = { ...lists, ...imported };
+          saveLists();
+          renderLists();
+        }catch(err){
+          alert("Fichier JSON invalide");
+        }
+      };
+      reader.readAsText(file);
+      e.target.value = "";
+    });
+
+    /* ===================== Popups : Paramètres / Delete ===================== */
+    const settingsModal = document.getElementById("settingsModal");
+    document.getElementById("settingsBtn").onclick = () => settingsModal.style.display = "flex";
+    document.getElementById("closeModal").onclick = () => settingsModal.style.display = "none";
+
+    const deleteModal = document.getElementById("deleteModal");
+    document.getElementById("cancelDelete").onclick = () => deleteModal.style.display = "none";
+    document.getElementById("confirmDelete").onclick = () => {
+      if(deleteTarget){
+        if(deleteTarget.type === "anime"){
+          lists[deleteTarget.listName].splice(deleteTarget.index, 1);
+        }else if(deleteTarget.type === "list"){
+          delete lists[deleteTarget.listName];
+        }
+        saveLists();
+        renderLists();
+      }
+      deleteModal.style.display = "none";
+    };
+
+    window.addEventListener("click", (e)=>{
+      if(e.target === deleteModal) deleteModal.style.display = "none";
+      if(e.target === settingsModal) settingsModal.style.display = "none";
+      if(e.target === document.getElementById("optionsModal")) document.getElementById("optionsModal").style.display = "none";
+    });
+
+    /* ===================== Popup Options Carte ===================== */
+    const optionsModal = document.getElementById("optionsModal");
+    const colorPicker = document.getElementById("colorPicker");
+    const colorPreview = document.getElementById("colorPreview");
+    const newTagInput = document.getElementById("newTagInput");
+    const addTagBtn = document.getElementById("addTagBtn");
+    const tagsListEl = document.getElementById("tagsList");
+    const checkboxEnabledEl = document.getElementById("checkboxEnabled");
+    const checkboxLabelEl = document.getElementById("checkboxLabel");
+    const commentInput = document.getElementById("commentInput");
+
+    colorPicker.addEventListener("input", ()=> colorPreview.style.background = colorPicker.value);
+
+    function openOptionsFor(anime){
+      document.getElementById("optTitle").textContent = `Options — ${anime.name}`;
+      colorPicker.value = anime.bgColor || anime.borderColor || "#ffcc00";
+      colorPreview.style.background = colorPicker.value;
+      const mode = (anime.bgColor ? "background" : "border");
+      document.querySelectorAll('input[name="applyMode"]').forEach(r=> r.checked = (r.value === mode));
+      renderTagsInPopup(anime);
+      checkboxEnabledEl.checked = !!(anime.checkbox && anime.checkbox.enabled);
+      checkboxLabelEl.value = (anime.checkbox && anime.checkbox.label) ? anime.checkbox.label : "";
+      commentInput.value = anime.comment || "";
+      optionsModal.style.display = "flex";
+    }
+
+    function renderTagsInPopup(anime){
+      tagsListEl.innerHTML = "";
+      (anime.tags||[]).forEach((tag, idx)=>{
+        const pill = document.createElement("div");
+        pill.className = "tag-pill";
+        const span = document.createElement("span");
+        span.textContent = tag;
+        const x = document.createElement("button");
+        x.type = "button";
+        x.textContent = "×";
+        x.title = "Supprimer ce tag";
+        x.style.display = "flex";
+        x.style.alignItems = "center";
+        x.style.justifyContent = "center";
+        x.addEventListener("click", ()=>{
+          const { listName, index } = optionTarget || {};
+          if(listName == null) return;
+          lists[listName][index].tags.splice(idx, 1);
+          saveLists();
+          openOptionsFor(lists[listName][index]);
+        });
+        pill.appendChild(span); pill.appendChild(x);
+        tagsListEl.appendChild(pill);
+      });
+    }
+
+    addTagBtn.addEventListener("click", ()=>{
+      const val = (newTagInput.value || "").trim();
+      if(!val) return;
+      if(!optionTarget) return;
+      const { listName, index } = optionTarget;
+      const a = lists[listName][index];
+      a.tags = a.tags || [];
+      if(!a.tags.includes(val)) a.tags.push(val);
+      newTagInput.value = "";
+      saveLists();
+      openOptionsFor(a);
+    });
+
+    document.getElementById("applyColorBtn").addEventListener("click", ()=>{
+      if(!optionTarget) return;
+      const { listName, index } = optionTarget;
+      const a = lists[listName][index];
+      const chosen = colorPicker.value;
+      const mode = document.querySelector('input[name="applyMode"]:checked').value;
+      if(mode === "border"){ a.borderColor = chosen; }
+      else { a.bgColor = chosen; }
+      saveLists();
+      renderLists();
+    });
+    document.getElementById("resetColorBtn").addEventListener("click", ()=>{
+      if(!optionTarget) return;
+      const { listName, index } = optionTarget;
+      const a = lists[listName][index];
+      a.borderColor = "#999";
+      a.bgColor = null;
+      saveLists();
+      renderLists();
+      colorPicker.value = a.borderColor;
+      colorPreview.style.background = a.borderColor;
+      document.querySelectorAll('input[name="applyMode"]').forEach(r=> r.checked = (r.value === "border"));
+    });
+
+    document.getElementById("saveOptions").addEventListener("click", ()=>{
+      if(!optionTarget) return;
+      const { listName, index } = optionTarget;
+      const a = lists[listName][index];
+      a.checkbox = a.checkbox || { enabled:false, label:"", checked:false };
+      a.checkbox.enabled = checkboxEnabledEl.checked;
+      a.checkbox.label = checkboxLabelEl.value || "";
+      a.comment = commentInput.value || "";
+      saveLists();
+      renderLists();
+      optionsModal.style.display = "none";
+    });
+
+    document.getElementById("closeOptions").addEventListener("click", ()=>{
+      optionsModal.style.display = "none";
+    });
+
+    Object.keys(lists).forEach(listName=>{
+      lists[listName] = lists[listName].map(ensureAnimeDefaults);
+    });
+    saveLists();
+    renderLists();
+  </script>
+</body>
+</html>
